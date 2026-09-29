@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Verbos Diarios</title>
+<meta name="theme-color" content="#F3F5F9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1422" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Verbos">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<style>
+/* Layout: one narrow column of verb cards; each tense is a textbook-style 2×3 grid (singular left, plural right). */
+:root {
+  --bg: #F3F5F9;
+  --surface: #FFFFFF;
+  --ink: #17203A;
+  --muted: #5E677C;
+  --line: #E1E5EE;
+  --accent: #2B4BD1;
+  --accent-soft: #E6EBFC;
+  --hl: #FFE766;
+  --hl-ink: #17203A;
+  --warn: #B4471A;
+  --f-display: "Iowan Old Style", "New York", ui-serif, Georgia, serif;
+  --f-ui: -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1422; --surface: #182032; --ink: #E8ECF5; --muted: #9AA3B9; --line: #283149;
+    --accent: #93A8FF; --accent-soft: #232E52; --hl: rgba(255, 216, 64, .26); --hl-ink: #FFE58A; --warn: #FF9C6E;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1422; --surface: #182032; --ink: #E8ECF5; --muted: #9AA3B9; --line: #283149;
+  --accent: #93A8FF; --accent-soft: #232E52; --hl: rgba(255, 216, 64, .26); --hl-ink: #FFE58A; --warn: #FF9C6E;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: flex; flex-direction: column; gap: 18px; }
+
+header.top { display: flex; flex-direction: column; gap: 4px; }
+.date { font-size: 13px; color: var(--muted); letter-spacing: .02em; }
+.date::first-letter { text-transform: uppercase; }
+h1 { font-family: var(--f-display); font-weight: 600; font-size: 30px; line-height: 1.1; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.stats { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: 500 14px var(--f-ui); padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.spacer { flex: 1; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 500 14px var(--f-ui); padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn.link { border: 0; background: none; color: var(--accent); padding: 6px 4px; }
+button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible, label.file:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.cards { display: flex; flex-direction: column; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+.card-head { display: flex; align-items: flex-start; gap: 10px; }
+.card-head .names { flex: 1; min-width: 0; }
+.inf { font-family: var(--f-display); font-style: italic; font-weight: 600; font-size: 28px; line-height: 1.1; margin: 0; overflow-wrap: anywhere; }
+.meaning { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.tag { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; white-space: nowrap; }
+.tag.new { background: var(--accent-soft); color: var(--accent); }
+.tag.review { border: 1px solid var(--line); color: var(--muted); }
+.tag.irr { background: var(--hl); color: var(--hl-ink); }
+
+.tense { display: flex; flex-direction: column; gap: 6px; }
+.tense + .tense { border-top: 1px dashed var(--line); padding-top: 12px; }
+.tense-name { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: repeat(3, auto); gap: 6px 14px; }
+.cell { display: flex; flex-direction: column; min-width: 0; }
+.pron { font-size: 11.5px; color: var(--muted); }
+.form { font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
+.form .end { color: var(--accent); font-weight: 700; }
+.form mark { background: var(--hl); color: var(--hl-ink); border-radius: 3px 0 0 3px; padding: 0 1px; }
+.hide { border: 1px dashed var(--line); background: transparent; color: var(--muted); font: 500 14px var(--f-ui); padding: 2px 8px; border-radius: 6px; text-align: left; cursor: pointer; min-height: 26px; }
+.card-foot { display: flex; justify-content: flex-end; }
+.bad { color: var(--warn); font-size: 14px; }
+
+.legend { font-size: 13px; color: var(--muted); display: flex; gap: 6px 16px; align-items: center; flex-wrap: wrap; }
+.legend mark { border-radius: 3px 0 0 3px; padding: 0 1px; }
+.legend .end { color: var(--accent); font-weight: 700; }
+.legend mark { background: var(--hl); color: var(--hl-ink); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; }
+.panel h2 { font-family: var(--f-display); font-weight: 600; font-size: 22px; margin: 0; }
+.panel p { margin: 0; color: var(--muted); font-size: 14px; max-width: 65ch; }
+textarea { width: 100%; min-height: 220px; font: 15px/1.5 var(--f-ui); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+label.file { position: relative; overflow: hidden; }
+label.file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.field { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.field select { font: 15px var(--f-ui); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+legend { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.check { display: flex; gap: 10px; align-items: center; font-size: 15px; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.note { font-size: 13px; color: var(--muted); }
+.msg { font-size: 14px; color: var(--accent); min-height: 1.2em; }
+.sync { font-size: 12px; color: var(--muted); text-align: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .form.reveal { animation: pop .18s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="date" id="date"></div>
+    <h1>Verbos de hoy</h1>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="bar" id="mainbar" style="gap:6px">
+    <div class="seg" role="group" aria-label="Modo">
+      <button id="modeShow" aria-pressed="true">Ver</button>
+      <button id="modeQuiz" aria-pressed="false">Practicar</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="openList">Mis verbos</button>
+    <button class="btn" id="openSettings">Ajustes</button>
+  </div>
+
+  <div class="legend" id="legend"><span>habl<b class="end">amos</b> = terminación regular</span><span><mark>piens</mark><b class="end">o</b> = cambio irregular</span></div>
+  <main class="cards" id="cards"></main>
+
+  <section class="panel" id="listPanel" hidden>
+    <h2>Mis verbos</h2>
+    <p>Un verbo por línea. Puedes añadir la traducción después de una coma, un punto y coma o un guion: <em>hablar – to speak</em>. Los reflexivos van con -se: <em>levantarse</em>.</p>
+    <textarea id="verbText" spellcheck="false" aria-label="Lista de verbos"></textarea>
+    <div class="row">
+      <label class="btn file">Subir archivo (.txt / .csv)<input type="file" id="fileIn" accept=".txt,.csv,text/plain,text/csv"></label>
+      <span class="note" id="countNote"></span>
+    </div>
+    <div class="msg" id="listMsg" role="status"></div>
+    <div class="row">
+      <button class="btn primary" id="saveList">Guardar lista</button>
+      <button class="btn" id="closeList">Cerrar</button>
+    </div>
+  </section>
+
+  <section class="panel" id="settingsPanel" hidden>
+    <h2>Ajustes</h2>
+    <div class="field"><label for="newCount">Verbos nuevos por día</label>
+      <select id="newCount"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+    <div class="field"><label for="reviewCount">Verbos de repaso por día</label>
+      <select id="reviewCount"><option>0</option><option>1</option><option>2</option><option>3</option></select></div>
+    <fieldset id="tenseSet"><legend>Tiempos</legend></fieldset>
+    <p class="note">Los cambios de número se aplican a partir de mañana, o ahora mismo con “Nuevo sorteo”.</p>
+    <div class="msg" id="setMsg" role="status"></div>
+    <div class="row">
+      <button class="btn primary" id="saveSettings">Guardar</button>
+      <button class="btn" id="reroll">Nuevo sorteo de hoy</button>
+      <button class="btn" id="closeSettings">Cerrar</button>
+    </div>
+  </section>
+
+  <div class="sync" id="sync"></div>
+</div>
+
+<script>
+// ---- Spanish conjugation engine ----
+const IRR = {
+  ser:   { pres:["soy","eres","es","somos","sois","son"], pret:["fui","fuiste","fue","fuimos","fuisteis","fueron"], imp:["era","eras","era","éramos","erais","eran"], part:"sido" },
+  estar: { pres:["estoy","estás","está","estamos","estáis","están"], pret:["estuve","estuviste","estuvo","estuvimos","estuvisteis","estuvieron"] },
+  ir:    { pres:["voy","vas","va","vamos","vais","van"], pret:["fui","fuiste","fue","fuimos","fuisteis","fueron"], imp:["iba","ibas","iba","íbamos","ibais","iban"], part:"ido" },
+  tener: { pres:["tengo","tienes","tiene","tenemos","tenéis","tienen"], pret:["tuve","tuviste","tuvo","tuvimos","tuvisteis","tuvieron"], fut:"tendr" },
+  hacer: { pres:["hago","haces","hace","hacemos","hacéis","hacen"], pret:["hice","hiciste","hizo","hicimos","hicisteis","hicieron"], fut:"har", part:"hecho" },
+  poder: { pres:["puedo","puedes","puede","podemos","podéis","pueden"], pret:["pude","pudiste","pudo","pudimos","pudisteis","pudieron"], fut:"podr" },
+  decir: { pres:["digo","dices","dice","decimos","decís","dicen"], pret:["dije","dijiste","dijo","dijimos","dijisteis","dijeron"], fut:"dir", part:"dicho" },
+  venir: { pres:["vengo","vienes","viene","venimos","venís","vienen"], pret:["vine","viniste","vino","vinimos","vinisteis","vinieron"], fut:"vendr" },
+  poner: { pres:["pongo","pones","pone","ponemos","ponéis","ponen"], pret:["puse","pusiste","puso","pusimos","pusisteis","pusieron"], fut:"pondr", part:"puesto" },
+  saber: { pres:["sé","sabes","sabe","sabemos","sabéis","saben"], pret:["supe","supiste","supo","supimos","supisteis","supieron"], fut:"sabr" },
+  querer:{ pres:["quiero","quieres","quiere","queremos","queréis","quieren"], pret:["quise","quisiste","quiso","quisimos","quisisteis","quisieron"], fut:"querr" },
+  dar:   { pres:["doy","das","da","damos","dais","dan"], pret:["di","diste","dio","dimos","disteis","dieron"] },
+  ver:   { pres:["veo","ves","ve","vemos","veis","ven"], pret:["vi","viste","vio","vimos","visteis","vieron"], imp:["veía","veías","veía","veíamos","veíais","veían"], part:"visto" },
+  salir: { pres:["salgo","sales","sale","salimos","salís","salen"], fut:"saldr" },
+  valer: { pres:["valgo","vales","vale","valemos","valéis","valen"], fut:"valdr" },
+  traer: { pres:["traigo","traes","trae","traemos","traéis","traen"], pret:["traje","trajiste","trajo","trajimos","trajisteis","trajeron"] },
+  caer:  { pres:["caigo","caes","cae","caemos","caéis","caen"] },
+  "oír": { pres:["oigo","oyes","oye","oímos","oís","oyen"], pret:["oí","oíste","oyó","oímos","oísteis","oyeron"] },
+  "reír":{ pres:["río","ríes","ríe","reímos","reís","ríen"], pret:["reí","reíste","rio","reímos","reísteis","rieron"] },
+  caber: { pres:["quepo","cabes","cabe","cabemos","cabéis","caben"], pret:["cupe","cupiste","cupo","cupimos","cupisteis","cupieron"], fut:"cabr" },
+  haber: { pres:["he","has","ha","hemos","habéis","han"], pret:["hube","hubiste","hubo","hubimos","hubisteis","hubieron"], fut:"habr" },
+  andar: { pret:["anduve","anduviste","anduvo","anduvimos","anduvisteis","anduvieron"] },
+  ducir: { pres:["duzco","duces","duce","ducimos","ducís","ducen"], pret:["duje","dujiste","dujo","dujimos","dujisteis","dujeron"] },
+  oler:  { pres:["huelo","hueles","huele","olemos","oléis","huelen"] },
+};
+// irregular bases that also conjugate their compounds (mantener, proponer, deshacer, conducir…)
+const COMPOUNDABLE = ["tener","venir","poner","hacer","decir","traer","caer","salir","valer","ducir","reír","oír"];
+
+const STEM = {};
+("pensar cerrar empezar comenzar despertar sentar calentar confesar recomendar gobernar negar fregar atravesar nevar merendar acertar apretar regar temblar tropezar " +
+ "perder entender encender defender extender tender atender encerrar despertar presentir asentir " +
+ "sentir preferir mentir divertir convertir sugerir herir advertir consentir referir hervir")
+  .split(" ").forEach(v => STEM[v] = "ie");
+("contar encontrar mostrar demostrar recordar costar volar soñar probar aprobar almorzar colgar sonar rogar acostar acordar renovar tronar " +
+ "volver devolver envolver desenvolver revolver resolver mover remover promover conmover llover doler morder soler dormir morir descontar comprobar ")
+  .split(" ").forEach(v => STEM[v] = "ue");
+("pedir servir repetir vestir desvestir medir seguir conseguir perseguir proseguir elegir corregir despedir impedir competir gemir rendir")
+  .split(" ").forEach(v => STEM[v] = "i");
+STEM.jugar = "ue";
+
+const ACCENT = new Set("enviar confiar esquiar guiar variar ampliar criar desviar espiar enfriar resfriar vaciar fotografiar continuar actuar graduar evaluar situar acentuar reunir prohibir".split(" "));
+
+const PARTS = [["poner","puesto"],["facer","fecho"],["hacer","hecho"],["decir","dicho"],["escribir","escrito"],["abrir","abierto"],["cubrir","cubierto"],["volver","vuelto"],["solver","suelto"],["morir","muerto"],["romper","roto"],["imprimir","impreso"],["freír","frito"]];
+const PART_EXACT = { ver:"visto", prever:"previsto" };
+
+const PRONOUNS = ["yo","tú","él / ella","nosotros","vosotros","ellos"];
+const REFL = ["me","te","se","nos","os","se"];
+const HABER = ["he","has","ha","hemos","habéis","han"];
+const TENSES = {
+  pres: "Presente", pret: "Pretérito indefinido", perf: "Pretérito perfecto", imp: "Imperfecto", fut: "Futuro"
+};
+
+const deaccent = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").normalize("NFC");
+const accentVowel = { a:"á", e:"é", i:"í", o:"ó", u:"ú" };
+
+function replaceLast(str, from, to) {
+  const i = str.lastIndexOf(from);
+  return i < 0 ? str : str.slice(0, i) + to + str.slice(i + from.length);
+}
+function changeLastVowel(stem, from, to) {
+  // change the last occurrence of vowel `from` in the stem (jugar: u→ue)
+  return replaceLast(stem, from, to);
+}
+
+function parse(input) {
+  let inf = input.trim().toLowerCase();
+  let refl = false;
+  if (/(ar|er|ir|ír)se$/.test(inf)) { refl = true; inf = inf.slice(0, -2); }
+  if (!/(ar|er|ir|ír)$/.test(inf)) return null;
+  const end = deaccent(inf.slice(-2));       // ar | er | ir
+  const stem = inf.slice(0, -2);
+  return { inf, refl, end, stem };
+}
+
+function findIrregular(inf) {
+  if (IRR[inf]) return { base: inf, prefix: "", data: IRR[inf] };
+  for (const key of COMPOUNDABLE) {
+    if (inf.length > key.length && inf.endsWith(key)) {
+      return { base: key, prefix: inf.slice(0, -key.length), data: IRR[key] };
+    }
+  }
+  return null;
+}
+
+function stemType(inf) {
+  return STEM[inf] || null;
+}
+
+const END = {
+  ar: { pres:["o","as","a","amos","áis","an"], pret:["é","aste","ó","amos","asteis","aron"], imp:["aba","abas","aba","ábamos","abais","aban"] },
+  er: { pres:["o","es","e","emos","éis","en"], pret:["í","iste","ió","imos","isteis","ieron"], imp:["ía","ías","ía","íamos","íais","ían"] },
+  ir: { pres:["o","es","e","imos","ís","en"],  pret:["í","iste","ió","imos","isteis","ieron"], imp:["ía","ías","ía","íamos","íais","ían"] },
+};
+const FUT = ["é","ás","á","emos","éis","án"];
+const BOOT = [0,1,2,5];
+
+// Purely regular pattern (used to highlight what is irregular)
+function regularForms(p) {
+  const e = END[p.end];
+  const futStem = deaccent(p.inf);
+  return {
+    pres: e.pres.map(x => p.stem + x),
+    pret: e.pret.map(x => p.stem + x),
+    imp:  e.imp.map(x => p.stem + x),
+    fut:  FUT.map(x => futStem + x),
+    part: p.stem + (p.end === "ar" ? "ado" : "ido"),
+  };
+}
+
+function presentForms(p) {
+  const e = END[p.end].pres;
+  const t = stemType(p.inf);
+  const forms = e.map((ending, i) => {
+    let s = p.stem;
+    const boot = BOOT.includes(i);
+    if (boot && t === "ie") s = changeLastVowel(s, "e", "ie");
+    else if (boot && t === "ue") s = p.inf.endsWith("jugar") ? changeLastVowel(s, "u", "ue") : changeLastVowel(s, "o", "ue");
+    else if (boot && t === "i") s = changeLastVowel(s, "e", "i");
+    if (boot && ACCENT.has(p.inf)) {
+      const m = s.match(/[iu](?=[^aeiouáéíóú]*$)/);
+      if (m) s = s.slice(0, m.index) + accentVowel[m[0]] + s.slice(m.index + 1);
+    }
+    // -uir (construir): construyo, construyes…
+    if (boot && p.end === "ir" && /[^gq]u$/.test(p.stem)) s = s + "y";
+    if (i === 0) {
+      if (/g(er|ir)$/.test(p.inf)) s = replaceLast(s, "g", "j");
+      else if (/guir$/.test(p.inf)) s = replaceLast(s, "gu", "g");
+      else if (/[aeiou]c(er|ir)$/.test(p.inf) && !/cocer$/.test(p.inf)) s = replaceLast(s, "c", "zc");
+      else if (/[^aeiou]c(er|ir)$/.test(p.inf)) s = replaceLast(s, "c", "z");
+    }
+    return s + ending;
+  });
+  return forms;
+}
+
+function preteriteForms(p) {
+  const t = stemType(p.inf);
+  if (p.end === "ar") {
+    return END.ar.pret.map((ending, i) => {
+      let s = p.stem;
+      if (i === 0) {
+        if (/car$/.test(p.inf)) s = replaceLast(s, "c", "qu");
+        else if (/guar$/.test(p.inf)) s = replaceLast(s, "gu", "gü");
+        else if (/gar$/.test(p.inf)) s = s + "u";
+        else if (/zar$/.test(p.inf)) s = replaceLast(s, "z", "c");
+      }
+      return s + ending;
+    });
+  }
+  if (/[aeo]$/.test(p.stem)) {           // leer, creer, poseer
+    return ["í","íste","yó","ímos","ísteis","yeron"].map(x => p.stem + x);
+  }
+  if (p.end === "ir" && /[^gq]u$/.test(p.stem)) {   // construir
+    return ["í","iste","yó","imos","isteis","yeron"].map(x => p.stem + x);
+  }
+  return END[p.end].pret.map((ending, i) => {
+    let s = p.stem;
+    if (p.end === "ir" && (i === 2 || i === 5) && t) {
+      if (t === "ie" || t === "i") s = changeLastVowel(s, "e", "i");
+      if (t === "ue") s = changeLastVowel(s, "o", "u");
+    }
+    return s + ending;
+  });
+}
+
+function participle(p) {
+  if (PART_EXACT[p.inf]) return PART_EXACT[p.inf];
+  for (const [k, v] of PARTS) if (p.inf.endsWith(k)) return p.inf.slice(0, -k.length) + v;
+  if (p.end !== "ar" && /[aeo]$/.test(p.stem)) return p.stem + "ído";
+  return p.stem + (p.end === "ar" ? "ado" : "ido");
+}
+
+function conjugate(input) {
+  const p = parse(input);
+  if (!p) return null;
+  const irr = findIrregular(p.inf);
+  const pre = irr ? irr.prefix : "";
+  const d = irr ? irr.data : {};
+  const fromIrr = key => d[key] ? d[key].map(f => pre + f) : null;
+
+  const pres = fromIrr("pres") || presentForms(p);
+  const pret = fromIrr("pret") || preteriteForms(p);
+  if (irr && irr.base === "reír" && pre.length > 1) pret[2] = pre + "rió"; // sonrió
+  const imp  = fromIrr("imp")  || END[p.end].imp.map(x => p.stem + x);
+  const futStem = d.fut ? pre + d.fut : deaccent(p.inf);
+  const fut = FUT.map(x => futStem + x);
+  const part = d.part ? pre + d.part : participle(p);
+  const perf = HABER.map(h => h + " " + part);
+
+  const reg = regularForms(p);
+  const regPerf = HABER.map(h => h + " " + reg.part);
+  const out = { pres, pret, perf, imp, fut };
+  const regular = { pres: reg.pres, pret: reg.pret, perf: regPerf, imp: reg.imp, fut: reg.fut };
+  const result = { infinitive: input.trim().toLowerCase(), reflexive: p.refl, tenses: {}, irregular: false };
+  const partEnd = p.end === "ar" ? "ado" : "ido";
+  const ENDINGS = { pres: END[p.end].pres, pret: END[p.end].pret, imp: END[p.end].imp, fut: FUT };
+  for (const k of Object.keys(out)) {
+    result.tenses[k] = out[k].map((f, i) => {
+      const irregular = f !== regular[k][i];
+      if (irregular) result.irregular = true;
+      // split into: pre (reflexive pronoun / auxiliary) + stem + regular ending
+      let pre = p.refl ? REFL[i] + " " : "";
+      let word = f;
+      let ending = k === "perf" ? partEnd : ENDINGS[k][i];
+      if (k === "perf") { pre += HABER[i] + " "; word = f.slice(HABER[i].length + 1); }
+      let stem = word, end = "";
+      if (word.length > ending.length && word.endsWith(ending)) { stem = word.slice(0, -ending.length); end = ending; }
+      return { form: pre + word, pre, stem, end, irregular };
+    });
+  }
+  return result;
+}
+
+
+
+</script>
+<script>
+const STARTER = `hablar – to speak
+comer – to eat
+vivir – to live
+ser – to be (permanent)
+estar – to be (temporary)
+tener – to have
+hacer – to do / make
+ir – to go
+poder – can / to be able
+querer – to want
+decir – to say
+venir – to come
+poner – to put
+saber – to know (facts)
+conocer – to know (people, places)
+salir – to go out
+dar – to give
+ver – to see
+pensar – to think
+dormir – to sleep
+pedir – to ask for
+seguir – to follow / continue
+empezar – to begin
+volver – to return
+jugar – to play
+encontrar – to find
+sentir – to feel
+leer – to read
+escribir – to write
+trabajar – to work
+llegar – to arrive
+buscar – to look for
+traer – to bring
+oír – to hear
+conducir – to drive
+elegir – to choose
+construir – to build
+levantarse – to get up
+acostarse – to go to bed
+divertirse – to have fun`;
+
+const TENSE_ORDER = ["pres", "pret", "perf", "imp", "fut"];
+const TENSE_HINT = { pres: "hablo", pret: "hablé", perf: "he hablado", imp: "hablaba", fut: "hablaré" };
+const LS_KEY = "verbos-diarios-state";
+const DOC_PATH = "app/state";
+
+const $ = id => document.getElementById(id);
+const todayKey = () => {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+};
+
+function parseList(text) {
+  const verbs = [], skipped = [], seen = new Set();
+  for (let raw of text.split(/\r?\n/)) {
+    raw = raw.trim().replace(/^["']|["']$/g, "");
+    if (!raw) continue;
+    const m = raw.match(/^([^,;\t–—:=]+?)\s*(?:[,;\t–—:=]|\s-\s)\s*(.*)$/);
+    let v = (m ? m[1] : raw).trim().toLowerCase().replace(/["']/g, "");
+    const meaning = m ? m[2].trim().replace(/^["']|["']$/g, "") : "";
+    if (!/^[a-záéíóúñü]*(ar|er|ir|ír)(se)?$/.test(v)) { if (!/^(verb|verbo|infinitivo)/i.test(v)) skipped.push(raw); continue; }
+    if (seen.has(v)) continue;
+    seen.add(v);
+    verbs.push({ v, m: meaning });
+  }
+  return { verbs, skipped };
+}
+const listToText = verbs => verbs.map(x => x.m ? `${x.v} – ${x.m}` : x.v).join("\n");
+
+function defaultState() {
+  return {
+    verbs: parseList(STARTER).verbs,
+    starter: true,
+    seen: {},          // verb -> last day shown (YYYY-MM-DD)
+    days: {},          // day -> {new:[], review:[], prev:{}}
+    settings: { newCount: 2, reviewCount: 1, tenses: ["pres", "pret", "fut"] },
+  };
+}
+
+let state = null;
+let db = null;
+let mode = "show";
+const revealed = new Set();
+
+function loadLocal() {
+  try { const s = localStorage.getItem(LS_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+}
+function saveLocal() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+}
+let saving = Promise.resolve();
+function persist() {
+  saveLocal();
+  if (!db) return;
+  const snapshot = JSON.parse(JSON.stringify(state));
+  saving = saving.then(() => db.doc(DOC_PATH).set(snapshot))
+    .then(() => { $("sync").textContent = "Guardado en tu cuenta de Claude"; })
+    .catch(() => { $("sync").textContent = "No se pudo guardar en la nube; queda guardado en este dispositivo."; });
+}
+
+function shuffle(a) {
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function buildDay(today) {
+  const { newCount, reviewCount } = state.settings;
+  const pool = state.verbs.map(x => x.v);
+  const unseen = shuffle(pool.filter(v => !state.seen[v]));
+  // review: prefer the verbs you have not seen for the longest time
+  const old = pool.filter(v => state.seen[v] && state.seen[v] < today)
+    .sort((a, b) => state.seen[a] < state.seen[b] ? -1 : 1);
+  const oldest = shuffle(old.slice(0, Math.max(reviewCount, Math.ceil(old.length / 2))));
+  let fresh = unseen.slice(0, newCount);
+  let review = oldest.slice(0, reviewCount);
+  const total = newCount + reviewCount;
+  // first days (nothing to review yet) or list exhausted: top up from the other pile
+  if (fresh.length + review.length < total) {
+    fresh = fresh.concat(unseen.slice(fresh.length, fresh.length + total - fresh.length - review.length));
+  }
+  if (fresh.length + review.length < total) {
+    review = review.concat(oldest.slice(review.length, review.length + total - fresh.length - review.length));
+  }
+  const prev = {};
+  [...fresh, ...review].forEach(v => { prev[v] = state.seen[v] || null; state.seen[v] = today; });
+  state.days[today] = { new: fresh, review, prev };
+  const keys = Object.keys(state.days).sort();
+  while (keys.length > 90) delete state.days[keys.shift()];
+}
+
+function undoDay(today) {
+  const d = state.days[today];
+  if (!d) return;
+  for (const [v, p] of Object.entries(d.prev || {})) { if (p) state.seen[v] = p; else delete state.seen[v]; }
+  delete state.days[today];
+}
+
+function ensureToday() {
+  const today = todayKey();
+  const d = state.days[today];
+  const known = new Set(state.verbs.map(x => x.v));
+  if (d && [...d.new, ...d.review].every(v => known.has(v))) return false;
+  if (d) undoDay(today);
+  buildDay(today);
+  return true;
+}
+
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const k of kids) if (k != null) n.append(k);
+  return n;
+}
+
+function renderCard(v, kind) {
+  const entry = state.verbs.find(x => x.v === v) || { v, m: "" };
+  const c = conjugate(v);
+  const tags = el("div", { class: "tags" },
+    el("span", { class: "tag " + (kind === "new" ? "new" : "review") }, kind === "new" ? "Nuevo" : "Repaso"),
+    c && c.irregular ? el("span", { class: "tag irr" }, "Irregular") : null);
+  const card = el("article", { class: "card" },
+    el("div", { class: "card-head" },
+      el("div", { class: "names" }, el("h2", { class: "inf" }, v), entry.m ? el("div", { class: "meaning" }, entry.m) : null),
+      tags));
+  if (!c) { card.append(el("div", { class: "bad" }, "No reconozco este infinitivo. Revísalo en “Mis verbos”.")); return card; }
+  const hiddenIds = [];
+  for (const t of TENSE_ORDER.filter(t => state.settings.tenses.includes(t))) {
+    const grid = el("div", { class: "grid" });
+    c.tenses[t].forEach((f, i) => {
+      const id = `${v}|${t}|${i}`;
+      const show = mode === "show" || revealed.has(id);
+      let formNode;
+      if (show) {
+        formNode = el("span", { class: "form" + (mode === "quiz" ? " reveal" : "") },
+          f.pre || null,
+          f.irregular ? el("mark", {}, f.stem) : f.stem,
+          f.end ? el("b", { class: "end" }, f.end) : null);
+      } else {
+        hiddenIds.push(id);
+        formNode = el("button", { class: "hide", "aria-label": `Mostrar ${PRONOUNS[i]}, ${TENSES[t]}`, onclick: () => { revealed.add(id); render(); } }, "toca para ver");
+      }
+      grid.append(el("div", { class: "cell" }, el("span", { class: "pron" }, PRONOUNS[i]), formNode));
+    });
+    card.append(el("section", { class: "tense" }, el("div", { class: "tense-name" }, TENSES[t]), grid));
+  }
+  if (mode === "quiz" && hiddenIds.length) {
+    card.append(el("div", { class: "card-foot" },
+      el("button", { class: "btn link", onclick: () => { hiddenIds.forEach(i => revealed.add(i)); render(); } }, "Mostrar todo")));
+  }
+  return card;
+}
+
+function render() {
+  const today = todayKey();
+  const d = state.days[today];
+  $("date").textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  const seenCount = state.verbs.filter(x => state.seen[x.v]).length;
+  const dayNum = Object.keys(state.days).length;
+  $("stats").textContent = `Día ${dayNum} · ${seenCount} de ${state.verbs.length} verbos vistos` + (state.starter ? " · lista de ejemplo" : "");
+  const scrollY = window.scrollY;
+  const cards = $("cards");
+  cards.replaceChildren(...d.new.map(v => renderCard(v, "new")), ...d.review.map(v => renderCard(v, "review")));
+  window.scrollTo(0, scrollY);
+  $("modeShow").setAttribute("aria-pressed", mode === "show");
+  $("modeQuiz").setAttribute("aria-pressed", mode === "quiz");
+}
+
+function showPanel(which) {
+  const list = which === "list", set = which === "settings";
+  $("listPanel").hidden = !list;
+  $("settingsPanel").hidden = !set;
+  $("cards").hidden = list || set;
+  $("mainbar").hidden = list || set;
+  $("legend").hidden = list || set;
+  if (list) {
+    $("verbText").value = listToText(state.verbs);
+    $("listMsg").textContent = state.starter ? "Esta es una lista de ejemplo. Sustitúyela por la tuya." : "";
+    updateCount();
+  }
+  if (set) {
+    $("newCount").value = state.settings.newCount;
+    $("reviewCount").value = state.settings.reviewCount;
+    $("tenseSet").querySelectorAll("input").forEach(i => i.checked = state.settings.tenses.includes(i.value));
+    $("setMsg").textContent = "";
+  }
+  window.scrollTo(0, 0);
+}
+
+function updateCount() {
+  const { verbs, skipped } = parseList($("verbText").value);
+  $("countNote").textContent = `${verbs.length} verbos` + (skipped.length ? ` · ${skipped.length} líneas no reconocidas` : "");
+}
+
+function wire() {
+  const fs = $("tenseSet");
+  for (const t of TENSE_ORDER) {
+    fs.append(el("label", { class: "check" }, el("input", { type: "checkbox", value: t, id: "t-" + t }), `${TENSES[t]} `, el("span", { class: "note" }, `(${TENSE_HINT[t]})`)));
+  }
+  $("modeShow").onclick = () => { mode = "show"; render(); };
+  $("modeQuiz").onclick = () => { mode = "quiz"; revealed.clear(); render(); };
+  $("openList").onclick = () => showPanel("list");
+  $("openSettings").onclick = () => showPanel("settings");
+  $("closeList").onclick = $("closeSettings").onclick = () => { showPanel(null); render(); };
+  $("verbText").addEventListener("input", updateCount);
+  $("fileIn").addEventListener("change", e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { $("verbText").value = String(r.result); updateCount(); $("listMsg").textContent = `Archivo cargado: ${f.name}. Pulsa “Guardar lista”.`; };
+    r.readAsText(f);
+    e.target.value = "";
+  });
+  $("saveList").onclick = () => {
+    const { verbs, skipped } = parseList($("verbText").value);
+    if (!verbs.length) { $("listMsg").textContent = "No encuentro ningún infinitivo. Escribe un verbo por línea."; return; }
+    state.verbs = verbs;
+    state.starter = false;
+    const changed = ensureToday();
+    persist();
+    $("listMsg").textContent = `Guardados ${verbs.length} verbos.` + (skipped.length ? ` Ignoradas: ${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? "…" : ""}` : "") + (changed ? " Los verbos de hoy se han actualizado." : "");
+  };
+  $("saveSettings").onclick = () => {
+    const tenses = [...$("tenseSet").querySelectorAll("input:checked")].map(i => i.value);
+    if (!tenses.length) { $("setMsg").textContent = "Elige al menos un tiempo."; return; }
+    state.settings = { newCount: +$("newCount").value, reviewCount: +$("reviewCount").value, tenses };
+    persist();
+    $("setMsg").textContent = "Ajustes guardados.";
+  };
+  $("reroll").onclick = () => {
+    const today = todayKey();
+    undoDay(today);
+    buildDay(today);
+    revealed.clear();
+    persist();
+    $("setMsg").textContent = "Nuevo sorteo listo.";
+  };
+}
+
+function adopt(s) {
+  const base = defaultState();
+  state = Object.assign(base, s || {});
+  state.settings = Object.assign(base.settings, (s && s.settings) || {});
+  if (!state.verbs || !state.verbs.length) { state.verbs = base.verbs; state.starter = true; }
+}
+
+async function start() {
+  wire();
+  adopt(loadLocal());
+  if (ensureToday()) saveLocal();
+  render();
+  try {
+    db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+  } catch (e) { db = null; }
+  if (!db) { $("sync").textContent = "Guardado solo en este dispositivo."; return; }
+  try {
+    const snap = await db.doc(DOC_PATH).get();
+    if (snap.exists) {
+      adopt(snap.data());
+      const changed = ensureToday();
+      saveLocal();
+      if (changed) persist(); else $("sync").textContent = "Sincronizado con tu cuenta de Claude";
+    } else {
+      persist();
+    }
+    if ($("listPanel").hidden && $("settingsPanel").hidden) render();
+  } catch (e) {
+    $("sync").textContent = "Sin conexión con la nube; usando los datos de este dispositivo.";
+  }
+}
+start();
+
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
+</script>
+</body>
+</html>
